@@ -1,333 +1,215 @@
-lucide.createIcons();
-
-let doctorData = JSON.parse(localStorage.getItem('trauma_doctor')) || {
-    name: "Dr. Xavier Jose Amaya Galanton", mpps: "000000", cm: "000000",
-    rif: "V-00000000-0", phone: "0400-0000000", photo: "", bio: "Bienvenido.",
-    calendarId: "amayitax63@gmail.com",
-    bookingLink: "https://calendar.app.google/czWRUZT5H1CwASkW8"
-};
-let patients = JSON.parse(localStorage.getItem('trauma_patients')) || [];
-let consultations = JSON.parse(localStorage.getItem('trauma_consults_v2')) || [];
-
-const API_KEY = 'AIzaSyBa22pvNsx-YtUXquohULQfqSH2kN6UEpU'; 
-const STORAGE_KEY_AGENDA = 'agenda_citas_v1';
-
-function updateDoctorDisplay() {
-    document.getElementById('disp-name').innerText = doctorData.name;
-    document.getElementById('disp-mpps').innerText = doctorData.mpps;
-    document.getElementById('disp-cm').innerText = doctorData.cm;
-    document.getElementById('disp-rif').innerText = doctorData.rif;
-    document.getElementById('disp-phone').innerText = doctorData.phone;
-    document.getElementById('disp-bio').innerText = doctorData.bio;
-    
-    document.getElementById('edit-name').value = doctorData.name;
-    document.getElementById('edit-mpps').value = doctorData.mpps;
-    document.getElementById('edit-mpps-cm').value = doctorData.cm;
-    document.getElementById('edit-rif').value = doctorData.rif;
-    document.getElementById('edit-phone').value = doctorData.phone;
-    document.getElementById('edit-bio').value = doctorData.bio;
-    document.getElementById('edit-calendar-id').value = doctorData.calendarId || "";
-    document.getElementById('edit-booking-link').value = doctorData.bookingLink || "";
-
-    if (doctorData.photo) {
-        const img = document.getElementById('profile-img-display');
-        img.src = doctorData.photo; img.style.display = "block";
-        document.getElementById('img-icon-placeholder').style.display = "none";
-    }
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --secondary: #64748b;
+    --accent: #0ea5e9;
+    --success: #10b981;
+    --danger: #ef4444;
+    --background: #f8fafc;
+    --card: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
 }
 
-function saveDoctorData() {
-    doctorData = {
-        name: document.getElementById('edit-name').value,
-        mpps: document.getElementById('edit-mpps').value,
-        cm: document.getElementById('edit-mpps-cm').value,
-        rif: document.getElementById('edit-rif').value,
-        phone: document.getElementById('edit-phone').value,
-        bio: document.getElementById('edit-bio').value,
-        calendarId: document.getElementById('edit-calendar-id').value,
-        bookingLink: document.getElementById('edit-booking-link').value,
-        photo: doctorData.photo
-    };
-    localStorage.setItem('trauma_doctor', JSON.stringify(doctorData));
-    updateDoctorDisplay(); toggleEditPanel();
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
-function toggleEditPanel() {
-    const p = document.getElementById('edit-profile-panel');
-    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+body {
+    background-color: var(--background);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+    width: 100%;
 }
 
-function handleImageUpload(input) {
-    const file = input.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            doctorData.photo = e.target.result;
-            document.getElementById('profile-img-display').src = e.target.result;
-            document.getElementById('profile-img-display').style.display = "block";
-            document.getElementById('img-icon-placeholder').style.display = "none";
-        };
-        reader.readAsDataURL(file);
-    }
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px;
+    min-height: 100vh;
 }
 
-function openBookingLink() {
-    const link = doctorData.bookingLink || "https://calendar.app.google/czWRUZT5H1CwASkW8";
-    window.open(link, '_blank');
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
-async function syncAgenda() {
-    const currentEmail = doctorData.calendarId || 'amayitax63@gmail.com';
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(currentEmail)}/events?key=${API_KEY}`;
-    try {
-        const res = await fetch(url);
-        const d = await res.json();
-        if (d.items) {
-            const ahora = new Date();
-            const eventosPendientes = d.items.filter(ev => {
-                const inicioCita = new Date(ev.start.dateTime || ev.start.date);
-                return inicioCita >= ahora;
-            });
-            localStorage.setItem(STORAGE_KEY_AGENDA, JSON.stringify(eventosPendientes));
-            renderAgenda(eventosPendientes); 
-            alert("Sincronizado con: " + currentEmail);
-        } else {
-            alert("Sin citas encontradas.");
-        }
-    } catch (e) { alert("Error de red"); }
+.logo-area {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
 }
 
-function renderAgenda(eventos) {
-    const body = document.getElementById('citas-body');
-    body.innerHTML = '';
-    eventos.sort((a,b) => new Date(a.start.dateTime || a.start.date) - new Date(b.start.dateTime || b.start.date))
-    .forEach(ev => {
-        const ini = new Date(ev.start.dateTime || ev.start.date);
-        const fecha = `${String(ini.getDate()).padStart(2,'0')}/${String(ini.getMonth()+1).padStart(2,'0')}/${ini.getFullYear()}`;
-        const hora = ini.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        body.innerHTML += `<tr><td>${ev.description || 'Consulta Reservada'}</td><td>${ev.location || 'Consultorio'}</td><td>${fecha}</td><td>${hora}</td></tr>`;
-    });
+.logo-area h1 {
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+    font-weight: 800;
 }
 
-function showView(id) {
-    document.querySelectorAll('.subpage-view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    const btnId = id === 'home-view' ? 'nav-home' : id === 'agenda-view' ? 'nav-agenda' : id === 'consultas-view' ? 'nav-consultas' : 'nav-pacientes';
-    document.getElementById(btnId).classList.add('active');
-    if(id === 'pacientes-view') renderPatients();
+.header-nav {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: none;
+    align-items: center;
 }
 
-function lookupPatient(cedula) {
-    if(!cedula) { document.getElementById('history-container').innerHTML = ''; return; }
-    const p = patients.find(pat => pat.id === cedula);
-    if(p) {
-        document.getElementById('c-name').value = p.name;
-        document.getElementById('c-weight').value = p.weight || '';
-        document.getElementById('c-birth').value = p.birthDate || '';
-        document.getElementById('c-blood').value = p.blood || '';
-        document.getElementById('c-height').value = p.height || '';
-        document.getElementById('c-allergies').value = p.allergies || '';
-        validarYCalcularEdad(p.birthDate);
-        renderHistory(cedula);
-    } else { document.getElementById('history-container').innerHTML = ''; }
+.header-nav::-webkit-scrollbar { display: none; }
+
+.btn-nav {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
-function renderHistory(cedula) {
-    const container = document.getElementById('history-container');
-    const history = consultations.filter(c => c.patientId === cedula);
-    container.innerHTML = history.length ? history.map((c, index) => 
-        `<div class="pill" onclick="loadConsultation('${cedula}', ${index})">${c.date}</div>`
-    ).join('') : '';
+.btn-nav:hover, .btn-nav.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #f0f7ff;
 }
 
-function loadConsultation(cedula, originalIndex) {
-    const history = consultations.filter(c => c.patientId === cedula);
-    const data = history[originalIndex];
-    if(data) {
-        document.getElementById('c-weight').value = data.weight;
-        document.getElementById('c-height').value = data.height;
-        document.getElementById('c-blood').value = data.blood;
-        document.getElementById('c-allergies').value = data.allergies;
-        document.getElementById('c-desc').value = data.desc;
-        document.getElementById('c-exams').value = data.exams;
-        document.getElementById('c-meds').value = data.meds;
-        document.getElementById('c-plan').value = data.plan;
-        document.getElementById('cons-today').innerText = data.date;
-    }
+.btn-home { background: var(--primary); color: white; border: none; }
+.btn-home:hover { background: var(--primary-dark); color: white; }
+
+.card {
+    background: var(--card);
+    border-radius: 16px; 
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    margin-bottom: 15px;
+    width: 100%;
 }
 
-function resetForm() {
-    document.getElementById('consultation-form').reset();
-    document.getElementById('c-age').value = "";
-    document.getElementById('history-container').innerHTML = '';
-    document.getElementById('cons-today').innerText = new Date().toLocaleDateString('es-ES');
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
-function formatearFechaInput(input) {
-    let v = input.value.replace(/\D/g, '');
-    if (v.length > 8) v = v.substring(0, 8);
-    if (v.length > 4) {
-        input.value = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
-    } else if (v.length > 2) {
-        input.value = v.substring(0, 2) + '/' + v.substring(2);
-    } else { input.value = v; }
+@media (min-width: 768px) { .profile-grid { grid-template-columns: 350px 1fr; } }
+
+.doctor-info-card { text-align: center; }
+
+.profile-image-wrapper {
+    width: 130px; height: 130px; 
+    background: #f1f5f9; border: 3px solid var(--primary); 
+    border-radius: 50%; margin: 0 auto 15px; 
+    display: flex; align-items: center; justify-content: center; 
+    overflow: hidden; position: relative;
 }
 
-function validarYCalcularEdad(f) {
-    if (!f || f.length < 10) return;
-    const partes = f.split('/');
-    const nac = new Date(partes[2], partes[1] - 1, partes[0]);
-    const hoy = new Date();
-    if (isNaN(nac.getTime())) return;
-    let edad = hoy.getFullYear() - nac.getFullYear();
-    if (hoy.getMonth() < nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) { edad--; }
-    document.getElementById('c-age').value = edad + " anos";
+#profile-img-display { width: 100%; height: 100%; object-fit: cover; display: none; }
+
+.doctor-name { font-size: 1.25rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 15px; }
+
+.id-badge {
+    display: flex; flex-direction: column; gap: 10px;
+    text-align: left; background: #f8fafc; padding: 15px;
+    border-radius: 12px; font-size: 0.85rem;
 }
 
-function imprimirExamenes58mm() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: "mm", format: [58, 200] });
-    const margin = 5;
-    const width = 48;
-    let y = 10;
+.id-item { display: flex; justify-content: space-between; border-bottom: 1px solid #edf2f7; padding-bottom: 4px; }
+.id-label { font-weight: 600; color: var(--secondary); }
 
-    const name = document.getElementById('c-name').value || "Paciente";
-    const id = document.getElementById('c-id').value || "N/A";
-    const age = document.getElementById('c-age').value || "N/A";
-    const exams = document.getElementById('c-exams').value || "";
-    const date = document.getElementById('cons-today').innerText;
-
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text(doctorData.name, margin, y); y += 6;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text(`MPPS: ${doctorData.mpps} CM: ${doctorData.cm}`, margin, y); y += 4;
-    doc.text(`RIF: ${doctorData.rif}`, margin, y); y += 4;
-    doc.text(`Telf: ${doctorData.phone}`, margin, y); y += 6;
-    doc.setFont("helvetica", "bold"); doc.text(`FECHA: ${date}`, margin, y); y += 6;
-    doc.text("DATOS DEL PACIENTE", margin, y); y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.text(`Nombre: ${name}`, margin, y); y += 4;
-    doc.text(`Cedula: ${id} | Edad: ${age}`, margin, y); y += 7;
-    doc.setFont("helvetica", "bold"); doc.text("ORDEN DE EXAMENES:", margin, y); y += 5;
-    doc.setFont("helvetica", "normal");
-    
-    const lines = doc.splitTextToSize(exams, width);
-    doc.text(lines, margin, y); y += (lines.length * 4);
-    
-    y += 15; doc.setDrawColor(200); doc.line(margin, y, 53, y); y += 4;
-    doc.setFontSize(7); doc.text("FIRMA Y SELLO DOCTOR", 29, y, { align: "center" });
-
-    doc.save(`Examenes_${name}.pdf`);
+.edit-trigger-bar {
+    width: 100%; height: 3px; background: var(--border); border: none;
+    cursor: pointer; border-radius: 3px; margin-top: 10px;
 }
 
-function imprimirRecipe58mm() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: "mm", format: [58, 400] });
-    const margin = 5;
-    const width = 48;
-    let y = 10;
-
-    const name = document.getElementById('c-name').value || "Paciente";
-    const id = document.getElementById('c-id').value || "N/A";
-    const age = document.getElementById('c-age').value || "N/A";
-    const weight = document.getElementById('c-weight').value || "N/A";
-    const meds = document.getElementById('c-meds').value || "";
-    const plan = document.getElementById('c-plan').value || "";
-    const date = document.getElementById('cons-today').innerText;
-
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text(doctorData.name, margin, y); y += 6;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text(`MPPS: ${doctorData.mpps} CM: ${doctorData.cm}`, margin, y); y += 4;
-    doc.text(`RIF: ${doctorData.rif}`, margin, y); y += 4;
-    doc.text(`Telf: ${doctorData.phone}`, margin, y); y += 6;
-    doc.setFont("helvetica", "bold"); doc.text(`FECHA: ${date}`, margin, y); y += 6;
-    doc.text("DATOS DEL PACIENTE", margin, y); y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.text(`Nombre: ${name}`, margin, y); y += 4;
-    doc.text(`Cedula: ${id}`, margin, y); y += 4;
-    doc.text(`Edad: ${age} Peso: ${weight}kg`, margin, y); y += 7;
-    doc.setFont("helvetica", "bold"); doc.text("MEDICAMENTOS:", margin, y); y += 5;
-    doc.setFont("helvetica", "normal");
-    meds.split(',').map(item => item.trim()).forEach(item => {
-        if(item){
-            const lines = doc.splitTextToSize("- " + item, width);
-            doc.text(lines, margin, y); y += (lines.length * 4);
-        }
-    });
-    y += 10; doc.setDrawColor(200); doc.line(margin, y, 53, y); y += 4;
-    doc.setFontSize(7); doc.text("FIRMA Y SELLO DOCTOR", 29, y, { align: "center" });
-    
-    y += 15;
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text(doctorData.name, margin, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text(`Telf: ${doctorData.phone}`, margin, y); y += 7;
-    doc.setFont("helvetica", "bold"); doc.text("PACIENTE:", margin, y); y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.text(`${name}`, margin, y); y += 4;
-    doc.text(`CI: ${id} | ${age} | ${weight}kg`, margin, y); y += 7;
-    doc.setFont("helvetica", "bold"); doc.text("PLAN:", margin, y); y += 5;
-    doc.setFont("helvetica", "normal");
-    plan.split(',').map(item => item.trim()).forEach(item => {
-        if(item){
-            const lines = doc.splitTextToSize("- " + item, width);
-            doc.text(lines, margin, y); y += (lines.length * 4);
-        }
-    });
-    y += 15; doc.line(margin, y, 53, y); y += 4;
-    doc.setFontSize(7); doc.text("FIRMA Y SELLO DOCTOR", 29, y, { align: "center" });
-
-    doc.save(`Recipe_${name}.pdf`);
+.edit-panel {
+    background: #fefce8; border: 1px solid #fef08a;
+    border-radius: 12px; padding: 15px; margin-top: 15px; display: none;
 }
 
-function renderPatients() {
-    const list = document.getElementById('patients-list');
-    list.innerHTML = patients.length ? patients.map(p => `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.lastVisit}</td></tr>`).join('') : '<tr><td colspan="3">Vacio</td></tr>';
+.subpage-view { display: none; animation: fadeIn 0.3s ease-out; }
+.subpage-view.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.form-section-title {
+    font-size: 0.75rem; text-transform: uppercase; font-weight: 700;
+    color: var(--secondary); border-bottom: 1px solid var(--border);
+    padding-bottom: 5px; margin: 20px 0 15px; letter-spacing: 0.05em;
 }
 
-document.getElementById('consultation-form').onsubmit = function(e) {
-    e.preventDefault();
-    const id = document.getElementById('c-id').value;
-    const name = document.getElementById('c-name').value;
-    if(!id || !name) return alert("Faltan datos");
-    const date = new Date().toLocaleDateString('es-ES');
-    const consultData = {
-        patientId: id, date,
-        weight: document.getElementById('c-weight').value,
-        height: document.getElementById('c-height').value,
-        blood: document.getElementById('c-blood').value,
-        allergies: document.getElementById('c-allergies').value,
-        desc: document.getElementById('c-desc').value,
-        exams: document.getElementById('c-exams').value,
-        meds: document.getElementById('c-meds').value,
-        plan: document.getElementById('c-plan').value
-    };
-    consultations.push(consultData);
-    localStorage.setItem('trauma_consults_v2', JSON.stringify(consultations));
-    const pData = { 
-        id, name, 
-        birthDate: document.getElementById('c-birth').value, 
-        blood: document.getElementById('c-blood').value,
-        height: document.getElementById('c-height').value,
-        weight: document.getElementById('c-weight').value,
-        allergies: document.getElementById('c-allergies').value,
-        lastVisit: date 
-    };
-    const idx = patients.findIndex(p => p.id === id);
-    if(idx > -1) patients[idx] = pData; else patients.push(pData);
-    localStorage.setItem('trauma_patients', JSON.stringify(patients));
-    alert("Consulta Guardada"); renderHistory(id);
-};
+.form-row { display: flex; gap: 15px; margin-bottom: 10px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
 
-window.onload = function() {
-    updateDoctorDisplay();
-    document.getElementById('cons-today').innerText = new Date().toLocaleDateString('es-ES');
-    const cache = localStorage.getItem(STORAGE_KEY_AGENDA);
-    if(cache) {
-        const ahora = new Date();
-        const filtrados = JSON.parse(cache).filter(ev => new Date(ev.start.dateTime || ev.start.date) >= ahora);
-        renderAgenda(filtrados);
-    }
-};
+@media (max-width: 600px) {
+    .form-row { flex-direction: column; gap: 5px; }
+    .form-row-3 { grid-template-columns: 1fr; }
+}
+
+.form-group { margin-bottom: 12px; }
+label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.75rem; color: var(--primary); }
+
+input, select, textarea { 
+    width: 100%; padding: 10px; border: 1px solid var(--border); 
+    border-radius: 8px; font-size: 0.9rem; background: #fff;
+}
+
+.btn { 
+    padding: 10px 20px; border-radius: 8px; border: none; 
+    font-weight: 700; cursor: pointer; display: inline-flex; 
+    align-items: center; gap: 8px; font-size: 0.85rem;
+}
+
+.btn-red { background: #dc2626; color: white; }
+.btn-blue { background: #1e3a8a; color: white; }
+.btn-green { background: #10b981; color: white; }
+.btn-recipe { background: #8b5cf6; color: white; }
+.btn-exams { background: #f59e0b; color: white; }
+
+.data-table-container { width: 100%; overflow-x: auto; margin-top: 15px; }
+.agenda-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.agenda-table th { text-align: left; padding: 12px; background: #f1f5f9; color: var(--secondary); font-size: 0.75rem; font-weight: 700; }
+.agenda-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+
+.history-pills {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 0;
+    scrollbar-width: none;
+    margin-top: 5px;
+    min-height: 35px;
+}
+.history-pills::-webkit-scrollbar { display: none; }
+.pill {
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.pill:hover { background: var(--primary); color: white; }
