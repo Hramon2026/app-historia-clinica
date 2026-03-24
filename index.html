@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de Gestion Medica - Traumatologia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="logo-area" onclick="showView('home-view')">
+                <h1>Sistema de registros</h1>
+            </div>
+            <nav class="header-nav">
+                <button class="btn-nav" id="nav-agenda" onclick="showView('agenda-view')"><i data-lucide="calendar"></i> Agenda</button>
+                <button class="btn-nav" id="nav-consultas" onclick="showView('consultas-view')"><i data-lucide="clipboard-list"></i> Consultas</button>
+                <button class="btn-nav" id="nav-pacientes" onclick="showView('pacientes-view')"><i data-lucide="users"></i> Pacientes</button>
+                <button class="btn-nav btn-home active" id="nav-home" onclick="showView('home-view')"><i data-lucide="home"></i> Inicio</button>
+            </nav>
+        </header>
+
+        <main id="home-view" class="subpage-view active">
+            <section class="profile-grid">
+                <div class="card doctor-info-card">
+                    <div class="profile-image-wrapper">
+                        <i id="img-icon-placeholder" data-lucide="user-round" size="60" style="color:#cbd5e1"></i>
+                        <img id="profile-img-display" src="" alt="Foto">
+                    </div>
+                    <h2 class="doctor-name" id="disp-name">Dr. Nombre Completo</h2>
+                    <div class="id-badge">
+                        <div class="id-item"><span class="id-label">MPPS:</span><span id="disp-mpps">000000</span></div>
+                        <div class="id-item"><span class="id-label">C.M.:</span><span id="disp-cm">000000</span></div>
+                        <div class="id-item"><span class="id-label">RIF:</span><span id="disp-rif">V-00000000-0</span></div>
+                        <div class="id-item"><span class="id-label">Telefono:</span><span id="disp-phone">0400-0000000</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Perfil Profesional</h3>
+                    <p style="margin-top:15px;" id="disp-bio">Bienvenido al sistema de gestion medica.</p>
+                    <button class="edit-trigger-bar" onclick="toggleEditPanel()"></button>
+                    <div id="edit-profile-panel" class="edit-panel">
+                        <div class="form-group"><label>Foto de Perfil</label><input type="file" id="edit-photo-input" accept="image/*" onchange="handleImageUpload(this)"></div>
+                        <div class="form-group"><label>Nombre del Doctor</label><input type="text" id="edit-name"></div>
+                        <div class="form-row-3">
+                            <div class="form-group"><label>MPPS</label><input type="text" id="edit-mpps"></div>
+                            <div class="form-group"><label>C.M.</label><input type="text" id="edit-mpps-cm"></div>
+                            <div class="form-group"><label>RIF</label><input type="text" id="edit-rif"></div>
+                        </div>
+                        <div class="form-group"><label>Telefono</label><input type="text" id="edit-phone"></div>
+                        <div class="form-group"><label>Correo para Sincronizar Agenda (Google Calendar)</label><input type="text" id="edit-calendar-id" placeholder="ejemplo@gmail.com"></div>
+                        <div class="form-group"><label>Link de Agenda de Citas (Google Calendar Booking)</label><input type="text" id="edit-booking-link" placeholder="https://calendar.app.google/..."></div>
+                        <div class="form-group"><label>Descripcion</label><textarea id="edit-bio" rows="3"></textarea></div>
+                        <div style="text-align:right"><button class="btn btn-blue" onclick="saveDoctorData()"><i data-lucide="save"></i> Guardar Cambios</button></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <section id="consultas-view" class="subpage-view">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div style="color:var(--primary-dark); font-size:1.4rem; font-weight:800;">Consulta Medica</div>
+                        <div id="history-container" class="history-pills"></div>
+                    </div>
+                    <div style="text-align:right; font-size:0.65rem; color:var(--secondary); font-weight:700;">
+                        FECHA <span id="cons-today" style="color:var(--text-main); font-size:0.85rem; display:block;">--/--/----</span>
+                    </div>
+                </div>
+                <form id="consultation-form" style="margin-top:15px;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;"><label>Cedula</label><input type="text" id="c-id" oninput="lookupPatient(this.value)"></div>
+                        <div class="form-group" style="flex:1.5;"><label>Nombre Completo</label><input type="text" id="c-name"></div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group"><label>Peso (kg)</label><input type="text" id="c-weight"></div>
+                        <div class="form-group"><label>Altura (cm)</label><input type="text" id="c-height"></div>
+                        <div class="form-group"><label>Sangre</label><input type="text" id="c-blood"></div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group"><label>Nacimiento (DD/MM/YYYY)</label><input type="text" id="c-birth" placeholder="dd/mm/aaaa" oninput="formatearFechaInput(this)" onblur="validarYCalcularEdad(this.value)"></div>
+                        <div class="form-group"><label>Edad</label><input type="text" id="c-age" readonly></div>
+                        <div class="form-group"><label>Reacciones Alergicas</label><input type="text" id="c-allergies"></div>
+                    </div>
+                    <div class="form-section-title">HALLAZGOS CLINICOS</div>
+                    <textarea id="c-desc" rows="4"></textarea>
+                    <div class="form-row">
+                        <div style="flex:1;"><div class="form-section-title">EXAMENES</div><textarea id="c-exams" rows="4"></textarea></div>
+                        <div style="flex:1;"><div class="form-section-title">RECIPE</div><textarea id="c-meds" rows="4"></textarea></div>
+                    </div>
+                    <div class="form-section-title">PLAN</div>
+                    <textarea id="c-plan" rows="3"></textarea>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+                        <button type="button" class="btn btn-recipe" onclick="imprimirRecipe58mm()"><i data-lucide="printer"></i> Recipe</button>
+                        <button type="button" class="btn btn-red" onclick="resetForm()">Nueva Consulta</button>
+                        <button type="submit" class="btn btn-blue">Guardar Consulta</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="agenda-view" class="subpage-view">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2>Agenda de Citas</h2>
+                    <div>
+                        <button class="btn btn-green" id="btnSyncAgenda" onclick="syncAgenda()"><i data-lucide="refresh-cw"></i> Sincronizar</button>
+                        <button class="btn btn-blue" id="btnNewCita" onclick="openBookingLink()"><i data-lucide="calendar-plus"></i> Crear Cita</button>
+                    </div>
+                </div>
+                <div class="data-table-container">
+                    <table class="agenda-table">
+                        <thead>
+                            <tr>
+                                <th>Cita Programada por</th>
+                                <th>Direccion de Consultorio</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody id="citas-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="pacientes-view" class="subpage-view">
+            <div class="card">
+                <h2>Pacientes Registrados</h2>
+                <div class="data-table-container">
+                    <table class="agenda-table">
+                        <thead><tr><th>Cedula</th><th>Nombre</th><th>Ultima Visita</th></tr></thead>
+                        <tbody id="patients-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
